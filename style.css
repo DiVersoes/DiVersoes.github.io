@@ -50,6 +50,7 @@ nav {
   font-weight: 700;
   color: var(--accent-light);
   letter-spacing: -0.5px;
+  text-decoration: none;
 }
 
 nav ul {

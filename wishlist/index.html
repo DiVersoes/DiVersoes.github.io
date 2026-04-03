@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LEGO Wishlist — DiVersoes</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="wishlist.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">DiVersoes</a>
+      <ul>
+        <li><a href="/#about">About</a></li>
+        <li><a href="/#projects">Projects</a></li>
+        <li><a href="/wishlist" class="active">Wishlist</a></li>
+        <li><a href="/#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="wl-main">
+
+    <!-- Top bar -->
+    <div class="wl-topbar">
+      <div>
+        <h1 class="wl-title">LEGO Wishlist</h1>
+        <p class="wl-subtitle">Drag to reorder within each priority group</p>
+      </div>
+      <div class="wl-actions">
+        <button id="btn-settings" class="btn-ghost">&#9881; Settings</button>
+        <button id="btn-add" class="btn-primary">+ Add Set</button>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="settings-panel" class="panel hidden">
+      <h3>Settings</h3>
+      <div class="form-row">
+        <label for="api-key-input">BrickEconomy API Key</label>
+        <div class="input-group">
+          <input type="password" id="api-key-input" placeholder="Paste your API key here" autocomplete="off" />
+          <button id="btn-save-key" class="btn-primary">Save</button>
+        </div>
+        <p id="api-key-status" class="hint"></p>
+      </div>
+    </div>
+
+    <!-- Add set panel -->
+    <div id="add-panel" class="panel hidden">
+      <h3>Add a LEGO Set</h3>
+      <div class="form-row">
+        <label for="set-number-input">Set Number</label>
+        <div class="input-group">
+          <input type="text" id="set-number-input" placeholder="e.g. 75257" />
+          <button id="btn-fetch" class="btn-primary">Fetch &amp; Add</button>
+        </div>
+        <p id="fetch-status" class="hint"></p>
+      </div>
+      <div class="form-row">
+        <label>Priority Tag</label>
+        <div id="tag-picker" class="tag-picker"></div>
+      </div>
+    </div>
+
+    <!-- Tags bar -->
+    <div class="tags-bar">
+      <div id="tags-list" class="tags-list"></div>
+      <button id="btn-new-tag" class="btn-ghost small">+ New tag</button>
+    </div>
+
+    <!-- Wishlist -->
+    <div id="wishlist-container"></div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon">🧱</div>
+      <p>No sets yet! Hit <strong>+ Add Set</strong> to get started.</p>
+    </div>
+
+  </main>
+
+  <!-- New tag modal -->
+  <div id="tag-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>New Priority Tag</h3>
+      <input type="text" id="tag-name-input" placeholder="e.g. Birthday, Christmas…" maxlength="30" />
+      <div class="modal-actions">
+        <button id="btn-cancel-tag" class="btn-ghost">Cancel</button>
+        <button id="btn-confirm-tag" class="btn-primary">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 DiVersoes. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="wishlist.js"></script>
+</body>
+</html>
