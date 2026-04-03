@@ -240,8 +240,13 @@ function getTag(id) {
 function addSet(setData, tagId) {
   const inGroup = state.sets.filter(s => s.tagId === (tagId || null));
   const maxOrder = inGroup.length ? Math.max(...inGroup.map(s => s.order)) : -1;
-  state.sets.push({ id: crypto.randomUUID(), tagId: tagId || null, order: maxOrder + 1, ...setData });
+  state.sets.push({ id: crypto.randomUUID(), tagId: tagId || null, order: maxOrder + 1, owned: false, ...setData });
   saveState();
+}
+
+function toggleOwned(setId) {
+  const set = state.sets.find(s => s.id === setId);
+  if (set) { set.owned = !set.owned; saveState(); }
 }
 
 function removeSet(setId) {
@@ -300,8 +305,11 @@ function renderSetCard(set) {
     `<option value="${t.id}"${set.tagId === t.id ? ' selected' : ''}>${t.name}</option>`
   ).join('');
 
+  const ownedClass  = set.owned ? ' owned' : '';
+  const ownedToggle = `<button class="owned-toggle${set.owned ? ' is-owned' : ''}" data-set-id="${set.id}">${set.owned ? '✓ Got it!' : '○ Want it'}</button>`;
+
   return `
-    <div class="set-card" data-id="${set.id}">
+    <div class="set-card${ownedClass}" data-id="${set.id}">
       <div class="drag-handle" title="Drag to reorder">&#8942;&#8942;</div>
       <img class="set-img"
            src="${set.image}"
@@ -315,6 +323,7 @@ function renderSetCard(set) {
         ${metas ? `<div class="set-metas">${metas}</div>` : ''}
         <div class="set-footer">
           ${priceBadge}
+          ${ownedToggle}
           <select class="tag-select" data-set-id="${set.id}">
             <option value="">— No tag —</option>
             ${tagOptions}
@@ -392,8 +401,14 @@ function renderWishlist() {
         if (evt.from !== evt.to) {
           reorderGroup(oldTagId, [...evt.from.querySelectorAll(':scope > .set-card')].map(el => el.dataset.id));
         }
+        // Re-render so tag selects and owned state reflect the move
+        setTimeout(() => render(), 0);
       },
     });
+  });
+
+  container.querySelectorAll('.owned-toggle').forEach(btn => {
+    btn.addEventListener('click', () => { toggleOwned(btn.dataset.setId); render(); });
   });
 
   container.querySelectorAll('.btn-remove').forEach(btn => {
