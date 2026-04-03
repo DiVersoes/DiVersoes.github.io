@@ -165,6 +165,41 @@ nav a.active { color: var(--accent-light) !important; }
   color: var(--text);
 }
 
+/* ── SYNC STATUS ─────────────────────────────────────────── */
+
+.sync-status {
+  font-size: 0.75rem;
+  color: var(--muted);
+  align-self: center;
+  transition: color 0.3s;
+}
+.sync-status.syncing { color: var(--accent-light); }
+.sync-status.synced  { color: #4ade80; }
+.sync-status.error   { color: #f87171; }
+
+/* ── SETTINGS EXTRAS ─────────────────────────────────────── */
+
+.settings-divider {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin: 0.5rem 0 1rem;
+}
+.settings-divider a { color: var(--accent-light); text-decoration: none; }
+.settings-divider a:hover { text-decoration: underline; }
+
+.label-note {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
 /* ── TAGS BAR ────────────────────────────────────────────── */
 
 .tags-bar {

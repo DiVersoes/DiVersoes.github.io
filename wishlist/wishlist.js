@@ -12,9 +12,11 @@ const TAG_COLORS = [
 // ── STATE ────────────────────────────────────────────────────
 
 let state = {
-  apiKey: '',
-  tags: [],   // [{ id, name, color }]
-  sets: [],   // [{ id, setNumber, name, image, pieces, retailPrice, marketPrice, isRetired, theme, year, tagId, order }]
+  apiKey: '',   // BrickSet API key (device-local)
+  binKey: '',   // JSONBin master key (device-local)
+  binId:  '',   // JSONBin bin ID (shared across devices)
+  tags: [],     // [{ id, name, color }]
+  sets: [],     // [{ id, setNumber, name, image, pieces, retailPrice, marketPrice, isRetired, theme, year, tagId, order }]
 };
 
 function loadState() {
@@ -28,82 +30,168 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleSave();
+}
+
+// ── CLOUD SYNC (JSONBin.io) ───────────────────────────────────
+
+const JSONBIN = 'https://api.jsonbin.io/v3';
+let syncTimer = null;
+
+function setSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const map = {
+    idle:    { text: '',            cls: '' },
+    syncing: { text: 'Syncing…',    cls: 'syncing' },
+    synced:  { text: 'Synced ✓',   cls: 'synced'  },
+    error:   { text: 'Sync failed', cls: 'error'   },
+    offline: { text: 'No cloud key — changes local only', cls: 'error' },
+  };
+  const s = map[status] || map.idle;
+  el.textContent = s.text;
+  el.className = `sync-status ${s.cls}`;
+}
+
+function scheduleSave() {
+  if (!state.binKey) { setSyncStatus('offline'); return; }
+  clearTimeout(syncTimer);
+  setSyncStatus('syncing');
+  syncTimer = setTimeout(async () => {
+    try {
+      await cloudSave();
+      setSyncStatus('synced');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Cloud save failed', err);
+      setSyncStatus('error');
+    }
+  }, 800);
+}
+
+async function cloudSave() {
+  const payload = { tags: state.tags, sets: state.sets };
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Master-Key': state.binKey,
+  };
+
+  if (!state.binId) {
+    // First save — create a new private bin
+    const res = await fetch(`${JSONBIN}/b`, {
+      method: 'POST',
+      headers: { ...headers, 'X-Bin-Name': 'lego-wishlist', 'X-Bin-Private': 'true' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Create bin failed: ${res.status}`);
+    const data = await res.json();
+    state.binId = data.metadata?.id;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Show the bin ID in settings so user can copy it for other devices
+    const binIdEl = document.getElementById('bin-id-display');
+    if (binIdEl) { binIdEl.value = state.binId; binIdEl.closest('.bin-id-row')?.classList.remove('hidden'); }
+  } else {
+    const res = await fetch(`${JSONBIN}/b/${state.binId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Update bin failed: ${res.status}`);
+  }
+}
+
+async function cloudLoad() {
+  if (!state.binKey || !state.binId) return;
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(`${JSONBIN}/b/${state.binId}/latest`, {
+      headers: { 'X-Master-Key': state.binKey },
+    });
+    if (!res.ok) throw new Error(`Load bin failed: ${res.status}`);
+    const data = await res.json();
+    const record = data.record;
+    if (record?.sets) state.sets = record.sets;
+    if (record?.tags) state.tags = record.tags;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    render();
+    setSyncStatus('synced');
+    setTimeout(() => setSyncStatus('idle'), 3000);
+  } catch (err) {
+    console.error('Cloud load failed', err);
+    setSyncStatus('error');
+  }
 }
 
 // ── API ──────────────────────────────────────────────────────
 
+// BrickSet API v3 — free, requires account at brickset.com
+// Routed through corsproxy.io because BrickSet doesn't allow browser requests directly.
+
 async function fetchSetData(rawNumber) {
   if (!state.apiKey) {
-    throw new Error('No API key — open Settings and paste your BrickEconomy API key.');
+    throw new Error('No API key — open Settings and paste your BrickSet API key.');
   }
 
-  // Accept "75257" or "75257-1"
+  // BrickSet uses "75257-1" format (number + variant)
   const setNum = rawNumber.trim().includes('-')
     ? rawNumber.trim()
     : `${rawNumber.trim()}-1`;
 
-  const url = `https://www.brickeconomy.com/api/v1/sets/${encodeURIComponent(setNum)}`;
+  const params = JSON.stringify({ setNumber: setNum });
+  const apiUrl =
+    `https://brickset.com/api/v3.asmx/getSets` +
+    `?apiKey=${encodeURIComponent(state.apiKey)}` +
+    `&userHash=` +
+    `&params=${encodeURIComponent(params)}`;
+
+  // Free CORS proxy — required because BrickSet blocks direct browser requests
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
 
   let res;
   try {
-    res = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${state.apiKey}`,
-        'Accept': 'application/json',
-      },
-    });
+    res = await fetch(proxyUrl);
   } catch (err) {
-    // Most likely a CORS or network error
-    throw new Error(
-      'Could not reach BrickEconomy. This might be a CORS restriction — ' +
-      'the API may not allow direct browser requests. ' +
-      '(Error: ' + err.message + ')'
-    );
+    throw new Error('Network error — check your internet connection. (' + err.message + ')');
   }
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error('Invalid or expired API key — check Settings.');
-  }
-  if (res.status === 404) {
-    throw new Error(`Set "${rawNumber}" not found on BrickEconomy.`);
-  }
   if (!res.ok) {
-    throw new Error(`API returned ${res.status}. Try again later.`);
+    throw new Error(`Request failed (${res.status}). Try again.`);
   }
 
   const data = await res.json();
-  return mapApiResponse(data, rawNumber.trim());
+
+  if (data.status === 'error') {
+    if (data.message?.toLowerCase().includes('invalid api key')) {
+      throw new Error('Invalid API key — check Settings.');
+    }
+    throw new Error(data.message || 'BrickSet API error.');
+  }
+
+  if (!data.sets || data.sets.length === 0) {
+    throw new Error(`Set "${rawNumber}" not found. Check the number and try again.`);
+  }
+
+  return mapBrickSet(data.sets[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-//  MAP API RESPONSE
-//  These field names are best-guesses. Once you test and see
-//  the actual JSON, update the property names below in ~30s.
-// ─────────────────────────────────────────────────────────────
-function mapApiResponse(data, inputNumber) {
-  const setNumber = data.set_number ?? data.number ?? data.id ?? inputNumber;
+function mapBrickSet(s) {
+  const setNumber = s.number ? `${s.number}-${s.numberVariant ?? 1}` : String(s.setID);
 
-  const isRetired =
-    data.retired === true  ||
-    data.available === false ||
-    data.availability === 'retired' ||
-    data.status === 'retired' ||
-    data.is_retired === true;
+  // BrickSet availability values: "Retail", "Retired", "LEGO exclusive", "Not for sale", etc.
+  const isRetired = s.availability === 'Retired';
 
-  // Image: use API value or fall back to BrickSet CDN (publicly accessible)
-  const image =
-    data.image_url ?? data.image ?? data.thumbnail ??
-    `https://images.brickset.com/sets/images/${setNumber}.jpg`;
+  const retailPrice = s.LEGOCom?.US?.retailPrice ?? null;
 
   return {
     setNumber,
-    name:        data.name        ?? data.title       ?? `Set ${setNumber}`,
-    image,
-    pieces:      data.pieces      ?? data.piece_count ?? data.num_parts ?? null,
-    retailPrice: data.retail_price ?? data.rrp        ?? data.msrp      ?? null,
-    marketPrice: data.current_price ?? data.lowest_price ?? data.market_price ?? null,
-    theme:       data.theme       ?? data.theme_name  ?? null,
-    year:        data.year        ?? data.release_year ?? null,
+    name:        s.name  || `Set ${setNumber}`,
+    image:       s.image?.imageURL || s.image?.thumbnailURL
+                 || `https://images.brickset.com/sets/images/${setNumber}.jpg`,
+    pieces:      s.pieces      ?? null,
+    retailPrice,
+    marketPrice: null,   // BrickSet doesn't carry resale market prices
+    theme:       s.theme       ?? null,
+    year:        s.year        ?? null,
     isRetired,
   };
 }
@@ -400,16 +488,46 @@ function initEvents() {
     const isHidden = panel.classList.contains('hidden');
     panel.classList.toggle('hidden', !isHidden);
     document.getElementById('add-panel').classList.add('hidden');
-    if (isHidden) document.getElementById('api-key-input').value = state.apiKey || '';
+    if (isHidden) {
+      document.getElementById('api-key-input').value  = state.apiKey || '';
+      document.getElementById('bin-key-input').value  = state.binKey || '';
+      document.getElementById('bin-id-input').value   = state.binId  || '';
+      const binIdDisplay = document.getElementById('bin-id-display');
+      if (binIdDisplay) {
+        binIdDisplay.value = state.binId || '';
+        binIdDisplay.closest('.bin-id-row')?.classList.toggle('hidden', !state.binId);
+      }
+    }
   });
 
-  document.getElementById('btn-save-key').addEventListener('click', () => {
-    const key = document.getElementById('api-key-input').value.trim();
-    state.apiKey = key;
-    saveState();
-    const s = document.getElementById('api-key-status');
-    setStatus(s, key ? 'API key saved.' : 'API key cleared.', 'success');
+  document.getElementById('btn-save-key').addEventListener('click', async () => {
+    const bricksetKey = document.getElementById('api-key-input').value.trim();
+    const binKey      = document.getElementById('bin-key-input').value.trim();
+    const binId       = document.getElementById('bin-id-input').value.trim();
+    const s           = document.getElementById('api-key-status');
+
+    state.apiKey = bricksetKey;
+    state.binKey = binKey;
+    if (binId) state.binId = binId;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    setStatus(s, 'Settings saved.', 'success');
     setTimeout(() => { s.textContent = ''; s.className = 'hint'; }, 3000);
+
+    // Show bin ID row if we already have one
+    const binIdDisplay = document.getElementById('bin-id-display');
+    if (binIdDisplay) {
+      binIdDisplay.value = state.binId || '';
+      binIdDisplay.closest('.bin-id-row')?.classList.toggle('hidden', !state.binId);
+    }
+
+    // If we have a binKey and binId, load from cloud now
+    if (binKey && binId) {
+      await cloudLoad();
+    } else if (binKey && !state.binId) {
+      // First time with key — trigger a save to create the bin
+      scheduleSave();
+    }
   });
 
   // Add set panel
@@ -458,6 +576,16 @@ function initEvents() {
   document.getElementById('tag-modal').addEventListener('click', e => {
     if (e.target.id === 'tag-modal') document.getElementById('tag-modal').classList.add('hidden');
   });
+
+  document.getElementById('btn-copy-bin-id')?.addEventListener('click', () => {
+    const val = document.getElementById('bin-id-display')?.value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.getElementById('btn-copy-bin-id');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    });
+  });
 }
 
 // ── BOOT ─────────────────────────────────────────────────────
@@ -465,3 +593,6 @@ function initEvents() {
 loadState();
 initEvents();
 render();
+
+// After initial render from localStorage, pull latest from cloud
+cloudLoad();
