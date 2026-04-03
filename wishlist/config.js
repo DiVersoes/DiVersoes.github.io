@@ -13,5 +13,5 @@ const WISHLIST_CONFIG = {
   // Leave empty on first deploy — the bin is created automatically.
   // After the first visit, open the browser console, copy the ID logged as
   // "[wishlist] Created new JSONBin: <ID>" and paste it here, then redeploy.
-  jsonbinBinId: '',
+  jsonbinBinId: '69d03e6636566621a878bb05',
 };
