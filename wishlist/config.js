@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  WISHLIST CONFIG — fill in your keys here
+//  WISHLIST CONFIG
 // ─────────────────────────────────────────────
 
 const WISHLIST_CONFIG = {
@@ -8,4 +8,10 @@ const WISHLIST_CONFIG = {
 
   // Free master key from jsonbin.io → Account → API Keys → Master Key
   jsonbinKey: '$2a$10$X8kSdCUqJo2dUV1fjGuzu.sYy0MP//dB52HNecVrETp/WzaOBzNvO',
+
+  // Bin ID for cross-device sync.
+  // Leave empty on first deploy — the bin is created automatically.
+  // After the first visit, open the browser console, copy the ID logged as
+  // "[wishlist] Created new JSONBin: <ID>" and paste it here, then redeploy.
+  jsonbinBinId: '',
 };

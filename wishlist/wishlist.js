@@ -77,39 +77,50 @@ function scheduleSave() {
 // Result is cached in state.binId (localStorage) so we only
 // call the list endpoint once per device.
 async function getOrCreateBin() {
+  // 1. Config-hardcoded ID is most reliable — takes priority
+  if (WISHLIST_CONFIG.jsonbinBinId) {
+    state.binId = WISHLIST_CONFIG.jsonbinBinId;
+    saveLocal();
+    return state.binId;
+  }
+
+  // 2. Cached from a previous session on this device
   if (state.binId) return state.binId;
 
   const headers = { 'X-Master-Key': WISHLIST_CONFIG.jsonbinKey };
 
-  // Try to find an existing bin by name
+  // 3. Discover by listing bins (JSONBin v3: result[].snippetMeta.uniqueId)
   try {
     const res = await fetch(`${JSONBIN}/b`, { headers });
     if (res.ok) {
       const data = await res.json();
       const bins = data.result ?? (Array.isArray(data) ? data : []);
-      const found = bins.find(b => {
-        const name = b.metadata?.name ?? b.snippetMeta?.name ?? b.name ?? '';
-        return name === 'lego-wishlist';
-      });
-      if (found) {
-        state.binId = found.metadata?.id ?? found.snippetMeta?.id ?? found.id;
+      const found = bins.find(b => (b.snippetMeta?.name ?? b.metadata?.name ?? '') === 'lego-wishlist');
+      const id = found?.snippetMeta?.uniqueId ?? found?.metadata?.id ?? found?.id;
+      if (id) {
+        state.binId = id;
         saveLocal();
-        return state.binId;
+        console.info('[wishlist] Found existing JSONBin:', id);
+        return id;
       }
     }
-  } catch (_) { /* fall through to create */ }
+  } catch (e) {
+    console.warn('[wishlist] Bin listing failed, will create new bin:', e);
+  }
 
-  // No existing bin — create one
+  // 4. First ever use — create the bin
   const res = await fetch(`${JSONBIN}/b`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json', 'X-Bin-Name': 'lego-wishlist', 'X-Bin-Private': 'true' },
     body: JSON.stringify({ tags: [], sets: [] }),
   });
   if (!res.ok) throw new Error(`Could not create bin (${res.status})`);
-  const data = await res.json();
-  state.binId = data.metadata?.id;
+  const created = await res.json();
+  const newId = created.metadata?.id;
+  state.binId = newId;
   saveLocal();
-  return state.binId;
+  console.info('[wishlist] Created new JSONBin:', newId, '\n→ Add this as jsonbinBinId in config.js for reliable cross-device sync');
+  return newId;
 }
 
 async function cloudLoad() {
