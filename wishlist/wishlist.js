@@ -291,6 +291,24 @@ function getSetsForTag(tagId) {
 
 // ── RENDER ────────────────────────────────────────────────────
 
+function setPrice(set) {
+  if (set.isRetired) return set.marketPrice ?? null;
+  return set.retailPrice ?? null;
+}
+
+function statsFor(sets) {
+  const owned  = sets.filter(s => s.owned);
+  const wanted = sets.filter(s => !s.owned);
+  const sum    = arr => arr.reduce((t, s) => t + (setPrice(s) ?? 0), 0);
+  const hasPrice = arr => arr.some(s => setPrice(s) != null);
+  return {
+    ownedCount:  owned.length,
+    ownedTotal:  hasPrice(owned)  ? sum(owned)  : null,
+    wantedCount: wanted.length,
+    wantedTotal: hasPrice(wanted) ? sum(wanted) : null,
+  };
+}
+
 function fmt(amount) {
   if (amount == null) return null;
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -345,6 +363,20 @@ function renderSetCard(set) {
     </div>`;
 }
 
+function renderGroupStats(stats) {
+  if (!stats.ownedCount && !stats.wantedCount) return '';
+  const parts = [];
+  if (stats.wantedCount) {
+    const price = stats.wantedTotal != null ? ` · ${fmt(stats.wantedTotal)}` : '';
+    parts.push(`<span class="gs-wanted">${stats.wantedCount} wanted${price}</span>`);
+  }
+  if (stats.ownedCount) {
+    const price = stats.ownedTotal != null ? ` · ${fmt(stats.ownedTotal)}` : '';
+    parts.push(`<span class="gs-owned">${stats.ownedCount} owned${price}</span>`);
+  }
+  return `<div class="group-stats">${parts.join('<span class="gs-sep">·</span>')}</div>`;
+}
+
 function renderGroup(tagId, label, color) {
   const sets = getSetsForTag(tagId);
   const nid  = tagId ?? 'null';
@@ -362,7 +394,7 @@ function renderGroup(tagId, label, color) {
       <div class="group-header">
         <span class="group-dot" style="background:${color}"></span>
         <span class="group-label">${label}</span>
-        <span class="group-count">${sets.length}</span>
+        ${renderGroupStats(statsFor(sets))}
         ${deleteBtn}
       </div>
       <div class="sortable-list" data-tag-id="${nid}">${setsHtml}</div>
@@ -439,7 +471,31 @@ function renderWishlist() {
   document.getElementById('empty-state').classList.toggle('hidden', state.sets.length > 0);
 }
 
+function renderSummary() {
+  const el = document.getElementById('wl-summary');
+  if (!el) return;
+  if (!state.sets.length) { el.innerHTML = ''; return; }
+
+  const s = statsFor(state.sets);
+
+  const wantedPrice = s.wantedTotal != null ? `<strong>${fmt(s.wantedTotal)}</strong>` : '';
+  const ownedPrice  = s.ownedTotal  != null ? `<strong>${fmt(s.ownedTotal)}</strong>`  : '';
+
+  el.innerHTML = `
+    <div class="summary-chip summary-wanted">
+      <span class="summary-label">Wishlist</span>
+      <span class="summary-count">${s.wantedCount} set${s.wantedCount !== 1 ? 's' : ''}</span>
+      ${wantedPrice ? `<span class="summary-price">${wantedPrice}</span>` : ''}
+    </div>
+    <div class="summary-chip summary-owned">
+      <span class="summary-label">Owned</span>
+      <span class="summary-count">${s.ownedCount} set${s.ownedCount !== 1 ? 's' : ''}</span>
+      ${ownedPrice ? `<span class="summary-price">${ownedPrice}</span>` : ''}
+    </div>`;
+}
+
 function render() {
+  renderSummary();
   renderTagsBar();
   renderTagPicker();
   renderWishlist();
