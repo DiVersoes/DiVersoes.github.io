@@ -248,6 +248,34 @@ footer {
 .summary-wanted { border-left: 3px solid var(--accent); }
 .summary-owned  { border-left: 3px solid #4A9B6A; }
 
+/* ── TABS ────────────────────────────────────────────────── */
+
+.wl-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.wl-tab {
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+}
+.wl-tab:hover { color: var(--text); }
+.wl-tab.active {
+  color: var(--text);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
+}
+
 /* ── TAGS BAR ────────────────────────────────────────────── */
 
 .tags-bar {
@@ -255,9 +283,7 @@ footer {
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 2.25rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
 }
 .tags-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 

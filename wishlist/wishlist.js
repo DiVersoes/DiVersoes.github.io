@@ -15,6 +15,8 @@ const TAG_COLORS = [
 //  Only wishlist data + cached bin ID live in state.
 //  API keys come from config.js and are never stored here.
 
+let activeTab = 'wishlist';
+
 let state = {
   binId: '',   // JSONBin bin ID — auto-discovered and cached
   tags:  [],   // [{ id, name, color }]
@@ -378,12 +380,15 @@ function renderGroupStats(stats) {
 }
 
 function renderGroup(tagId, label, color) {
-  const sets = getSetsForTag(tagId);
-  const nid  = tagId ?? 'null';
+  const allSets = getSetsForTag(tagId);
+  const sets    = activeTab === 'wishlist'
+    ? allSets.filter(s => !s.owned)
+    : allSets.filter(s =>  s.owned);
+  const nid = tagId ?? 'null';
 
-  const setsHtml = sets.length
-    ? sets.map(renderSetCard).join('')
-    : `<div class="group-empty">No sets here yet — drag one in or add with this tag</div>`;
+  if (!sets.length) return '';
+
+  const setsHtml = sets.map(renderSetCard).join('');
 
   const deleteBtn = tagId
     ? `<button class="btn-delete-tag" data-tag-id="${tagId}" title="Delete tag">&times;</button>`
@@ -468,7 +473,16 @@ function renderWishlist() {
     });
   });
 
-  document.getElementById('empty-state').classList.toggle('hidden', state.sets.length > 0);
+  const visibleSets = activeTab === 'wishlist'
+    ? state.sets.filter(s => !s.owned)
+    : state.sets.filter(s =>  s.owned);
+  const emptyEl = document.getElementById('empty-state');
+  emptyEl.classList.toggle('hidden', visibleSets.length > 0);
+  if (visibleSets.length === 0) {
+    emptyEl.querySelector('p').innerHTML = activeTab === 'wishlist'
+      ? 'Your wishlist is empty! Hit <strong>+ Add Set</strong> to get started.'
+      : 'No owned sets yet. Mark sets as <strong>Got it!</strong> to see them here.'
+  }
 }
 
 function renderSummary() {
@@ -595,6 +609,14 @@ function initEvents() {
 
   document.getElementById('tag-modal').addEventListener('click', e => {
     if (e.target.id === 'tag-modal') document.getElementById('tag-modal').classList.add('hidden');
+  });
+
+  document.querySelector('.wl-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.wl-tab');
+    if (!tab || tab.dataset.tab === activeTab) return;
+    activeTab = tab.dataset.tab;
+    document.querySelectorAll('.wl-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    render();
   });
 }
 
