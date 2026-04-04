@@ -1,13 +1,13 @@
 /* ── PALETTE OVERRIDE (wishlist page only) ───────────────── */
 
 body {
-  --accent:       #FF385C;
-  --accent-dark:  #E31C5F;
-  --bg:           #F7F7F7;
+  --accent:       #C9547A;
+  --accent-dark:  #A83860;
+  --bg:           #FDF6F8;
   --surface:      #FFFFFF;
-  --border:       #DDDDDD;
-  --text:         #222222;
-  --muted:        #717171;
+  --border:       #EDD5DC;
+  --text:         #1F1F1F;
+  --muted:        #9E7688;
   --radius:       12px;
 }
 
@@ -81,8 +81,8 @@ footer {
   align-self: center;
 }
 .sync-status.syncing { color: #888; }
-.sync-status.synced  { color: #008A05; }
-.sync-status.error   { color: #C13515; }
+.sync-status.synced  { color: #4A9B6A; }
+.sync-status.error   { color: #B04040; }
 
 /* ── BUTTONS ─────────────────────────────────────────────── */
 
@@ -170,8 +170,8 @@ footer {
 }
 
 .hint { font-size: 0.8rem; margin-top: 0.4rem; color: var(--muted); min-height: 1.2em; }
-.hint.success { color: #008A05; }
-.hint.error   { color: #C13515; }
+.hint.success { color: #4A9B6A; }
+.hint.error   { color: #B04040; }
 
 /* ── TAG PICKER ──────────────────────────────────────────── */
 
@@ -317,7 +317,7 @@ footer {
   left: 0;
   right: 0;
   height: 3px;
-  background: #008A05;
+  background: #4A9B6A;
   z-index: 3;
 }
 
@@ -419,14 +419,14 @@ footer {
   border-radius: 999px;
 }
 .price-badge.retail {
-  background: #ECFDF5;
-  color: #008A05;
-  border: 1px solid #D1FAE5;
+  background: #EEFAF4;
+  color: #3A8A5A;
+  border: 1px solid #C5E8D5;
 }
 .price-badge.retired {
-  background: #FFF7ED;
-  color: #9A3412;
-  border: 1px solid #FED7AA;
+  background: #FDF3F0;
+  color: #A04030;
+  border: 1px solid #F0CCBB;
 }
 
 /* ── OWNED TOGGLE ────────────────────────────────────────── */
@@ -447,11 +447,11 @@ footer {
   white-space: nowrap;
   user-select: none;
 }
-.owned-toggle:hover { border-color: #008A05; color: #008A05; }
+.owned-toggle:hover { border-color: #3A8A5A; color: #3A8A5A; }
 .owned-toggle.is-owned {
-  background: #ECFDF5;
-  border-color: #6EE7B7;
-  color: #008A05;
+  background: #EEFAF4;
+  border-color: #A8D8BE;
+  color: #3A8A5A;
   font-weight: 600;
 }
 

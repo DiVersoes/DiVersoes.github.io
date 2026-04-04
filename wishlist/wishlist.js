@@ -7,8 +7,8 @@ const STORAGE_KEY = 'lego-wishlist-v1';
 const JSONBIN     = 'https://api.jsonbin.io/v3';
 
 const TAG_COLORS = [
-  '#FF385C', '#0078D7', '#008A05', '#9B59B6',
-  '#E67E22', '#0891B2', '#C0392B', '#16A085',
+  '#C9547A', '#7B6EA8', '#5B9E8A', '#C47A3E',
+  '#6A8FC4', '#B05C8A', '#6AAB72', '#A0627A',
 ];
 
 // ── STATE ─────────────────────────────────────────────────────
