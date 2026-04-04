@@ -23,7 +23,7 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-.logo { color: var(--text) !important; }
+.logo img { height: 40px; }
 
 nav a { color: var(--muted); }
 nav a:hover { color: var(--text); }
