@@ -206,7 +206,7 @@ async function fetchSetData(rawNumber) {
 function mapBrickSet(s) {
   const setNumber  = s.number ? `${s.number}-${s.numberVariant ?? 1}` : String(s.setID);
   const isRetired  = s.availability === 'Retired';
-  const retailPrice = s.LEGOCom?.US?.retailPrice ?? null;
+  const retailPrice = s.LEGOCom?.DE?.retailPrice ?? null;
 
   return {
     setNumber,
@@ -311,7 +311,7 @@ function statsFor(sets) {
 
 function fmt(amount) {
   if (amount == null) return null;
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
 }
 
 function renderSetCard(set) {
