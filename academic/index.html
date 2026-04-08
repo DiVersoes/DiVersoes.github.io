@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic — DiVersoes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --text: #e5e5e5;
+      --muted: #888;
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+    }
+
+    /* NAV */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,13,13,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-light);
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
+    nav a:hover, nav a.active { color: var(--text); }
+
+    /* LAYOUT */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    /* PROFILE HEADER */
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2.5rem;
+    }
+    .profile-header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text);
+    }
+    .profile-header .title {
+      font-size: 1.1rem;
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+    .profile-header .location {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .profile-links {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .profile-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+    .profile-links a:hover { color: var(--accent-light); }
+    .profile-links a svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* SECTIONS */
+    .cv-section {
+      margin-bottom: 2.75rem;
+    }
+    .cv-section h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 1.25rem;
+    }
+
+    /* TIMELINE ENTRIES */
+    .entry {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+      padding: 1.1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .entry:hover { border-color: var(--accent); }
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .entry-name {
+      font-weight: 600;
+      font-size: 0.975rem;
+      color: var(--text);
+    }
+    .entry-sub {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+    .entry-date {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-top: 0.15rem;
+    }
+
+    /* PUBLICATION ENTRIES */
+    .pub-entry {
+      padding: 1.1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .pub-entry:hover { border-color: var(--accent); }
+    .pub-entry .pub-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .pub-entry .pub-author {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* SKILLS */
+    .skills-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+    .skill-tag {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.875rem;
+      color: var(--text);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .skill-tag:hover { border-color: var(--accent-light); color: var(--accent-light); }
+
+    /* EVENTS */
+    .event-entry {
+      padding: 0.85rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .event-entry:hover { border-color: var(--accent); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 2rem 1.5rem;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav>
+      <a href="/" class="logo">DiVersoes</a>
+      <ul>
+        <li><a href="/#about">About</a></li>
+        <li><a href="/#projects">Projects</a></li>
+        <li><a href="/wishlist">Wishlist</a></li>
+        <li><a href="/academic" class="active">Academic</a></li>
+        <li><a href="/#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <h1>Diana Salvador</h1>
+      <div class="title">PhD Student in Biotechnology</div>
+      <div class="location">Aveiro, Portugal</div>
+      <div class="profile-links">
+        <a href="mailto:diana.salvador.00@gmail.com">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          diana.salvador.00@gmail.com
+        </a>
+        <a href="https://www.linkedin.com/in/dianasalvador" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+          LinkedIn
+        </a>
+      </div>
+    </div>
+
+    <!-- Education -->
+    <section class="cv-section">
+      <h2>Education</h2>
+
+      <div class="entry">
+        <div class="entry-top">
+          <div>
+            <div class="entry-name">Doctor of Philosophy (PhD) — Biotechnology</div>
+            <div class="entry-sub">Universidade de Aveiro</div>
+          </div>
+          <div class="entry-date">Sep 2022 — present</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-top">
+          <div>
+            <div class="entry-name">MSc — Biotechnology</div>
+            <div class="entry-sub">Universidade de Aveiro</div>
+          </div>
+          <div class="entry-date">Jan 2019 — Dec 2021</div>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-top">
+          <div>
+            <div class="entry-name">BSc — Biology</div>
+            <div class="entry-sub">Universidade de Aveiro</div>
+          </div>
+          <div class="entry-date">2016 — 2019</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Publications -->
+    <section class="cv-section">
+      <h2>Publications</h2>
+
+      <div class="pub-entry">
+        <div class="pub-title">Photodynamic inactivation of methicillin-resistant <em>Staphylococcus aureus</em> on skin using a porphyrinic formulation</div>
+        <div class="pub-author">Diana Salvador et al.</div>
+      </div>
+
+      <div class="pub-entry">
+        <div class="pub-title">Hyperthermia Enhances Doxorubicin Therapeutic Efficacy against A375 and MNT-1 Melanoma Cells</div>
+        <div class="pub-author">Diana Salvador et al.</div>
+      </div>
+    </section>
+
+    <!-- Scientific Events & Certifications -->
+    <section class="cv-section">
+      <h2>Scientific Events &amp; Certifications</h2>
+      <div class="event-entry">Evento Científico — Nanotease</div>
+      <div class="event-entry">Workshop "From in silico to animal models for the study of human diseases"</div>
+      <div class="event-entry">1st GenomePT Symposium</div>
+      <div class="event-entry">9th Workshop in Lipidomics — "Lipidomics In Health &amp; Disease" (online)</div>
+    </section>
+
+    <!-- Skills -->
+    <section class="cv-section">
+      <h2>Skills</h2>
+      <div class="skills-list">
+        <span class="skill-tag">Research</span>
+        <span class="skill-tag">Communication</span>
+        <span class="skill-tag">Problem-solving</span>
+        <span class="skill-tag">Biotechnology</span>
+        <span class="skill-tag">Microbiology</span>
+        <span class="skill-tag">Cell Biology</span>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 DiVersoes. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
