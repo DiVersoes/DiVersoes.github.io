@@ -16,6 +16,8 @@ const TAG_COLORS = [
 //  API keys come from config.js and are never stored here.
 
 let activeTab = 'wishlist';
+let pendingCancelSetId = null;
+let pendingUpdateSetId = null;
 
 let state = {
   binId: '',   // JSONBin bin ID — auto-discovered and cached
@@ -291,6 +293,105 @@ function getSetsForTag(tagId) {
     .sort((a, b) => a.order - b.order);
 }
 
+// ── FUNDING ───────────────────────────────────────────────────
+
+function startFunding(setId) {
+  const set = state.sets.find(s => s.id === setId);
+  if (!set || set.owned) return;
+  if (!set.funding) set.funding = { active: false, raised: 0 };
+  set.funding.active = true;
+  if (set.funding.raised == null) set.funding.raised = 0;
+  saveState();
+  render();
+}
+
+function openCancelFundingModal(setId) {
+  const set = state.sets.find(s => s.id === setId);
+  if (!set) return;
+  pendingCancelSetId = setId;
+  document.getElementById('cancel-funding-name').textContent = set.name;
+  document.getElementById('cancel-funding-modal').classList.remove('hidden');
+}
+
+function confirmCancelFunding() {
+  if (!pendingCancelSetId) return;
+  const set = state.sets.find(s => s.id === pendingCancelSetId);
+  if (set?.funding) { set.funding.active = false; set.funding.raised = 0; }
+  pendingCancelSetId = null;
+  document.getElementById('cancel-funding-modal').classList.add('hidden');
+  saveState();
+  render();
+}
+
+function openUpdateRaisedModal(setId) {
+  const set = state.sets.find(s => s.id === setId);
+  if (!set) return;
+  pendingUpdateSetId = setId;
+  document.getElementById('raised-amount-input').value = set.funding?.raised ?? 0;
+  document.getElementById('update-raised-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('raised-amount-input').focus(), 50);
+}
+
+function confirmUpdateRaised() {
+  if (!pendingUpdateSetId) return;
+  const set = state.sets.find(s => s.id === pendingUpdateSetId);
+  const val = parseFloat(document.getElementById('raised-amount-input').value) || 0;
+  if (set?.funding) set.funding.raised = Math.max(0, val);
+  pendingUpdateSetId = null;
+  document.getElementById('update-raised-modal').classList.add('hidden');
+  saveState();
+  render();
+}
+
+function donateUrl(set) {
+  const link = (WISHLIST_CONFIG.donationLink ?? '').trim();
+  if (!link) return '';
+  const goal      = setPrice(set) ?? 0;
+  const raised    = set.funding?.raised ?? 0;
+  const remaining = Math.max(0, goal - raised);
+  if (link.includes('paypal.me') && remaining > 0) {
+    return `${link.replace(/\/$/, '')}/${remaining.toFixed(2)}`;
+  }
+  return link;
+}
+
+function renderFundingCard(set) {
+  const goal   = setPrice(set) ?? 0;
+  const raised = set.funding?.raised ?? 0;
+  const pct    = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+  const url    = donateUrl(set);
+  const donateBtn = url
+    ? `<a href="${url}" target="_blank" rel="noopener" class="btn-donate">Donate</a>`
+    : `<span class="btn-donate btn-donate-inactive">Set donationLink in config.js</span>`;
+
+  return `
+    <div class="funding-card" data-id="${set.id}">
+      <img class="funding-card-img"
+           src="${set.image}"
+           alt="${set.name}"
+           onerror="this.src='https://images.brickset.com/sets/images/${set.setNumber}.jpg';this.onerror=null" />
+      <div class="funding-card-body">
+        <div class="funding-card-number">#${set.setNumber}</div>
+        <div class="funding-card-name">${set.name}</div>
+        <div class="funding-progress">
+          <div class="funding-progress-bar">
+            <div class="funding-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="funding-progress-stats">
+            <span class="funding-raised">${fmt(raised) ?? '€0,00'} raised</span>
+            <span class="funding-pct">${pct}%</span>
+            <span class="funding-goal">of ${goal > 0 ? fmt(goal) : '—'}</span>
+          </div>
+        </div>
+        <div class="funding-card-actions">
+          ${donateBtn}
+          <button class="btn-edit-raised" data-set-id="${set.id}" title="Update raised amount">✎</button>
+          <button class="btn-cancel-funding" data-set-id="${set.id}" title="Cancel funding">✕</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 // ── RENDER ────────────────────────────────────────────────────
 
 function setPrice(set) {
@@ -339,6 +440,18 @@ function renderSetCard(set) {
   const ownedClass  = set.owned ? ' owned' : '';
   const ownedToggle = `<button class="owned-toggle${set.owned ? ' is-owned' : ''}" data-set-id="${set.id}">${set.owned ? '✓ Got it!' : '○ Want it'}</button>`;
 
+  const fundBtn = !set.owned
+    ? `<button class="btn-fund${set.funding?.active ? ' is-funding' : ''}" data-set-id="${set.id}">${set.funding?.active ? '♥ Funding' : '+ Fund'}</button>`
+    : '';
+  const fundGoal    = setPrice(set) ?? 0;
+  const fundRaised  = set.funding?.raised ?? 0;
+  const fundPct     = fundGoal > 0 ? Math.min(100, Math.round((fundRaised / fundGoal) * 100)) : 0;
+  const miniProgress = set.funding?.active ? `
+    <div class="mini-progress-wrap">
+      <div class="mini-progress-bar"><div class="mini-progress-fill" style="width:${fundPct}%"></div></div>
+      <span class="mini-progress-label">${fmt(fundRaised) ?? '€0,00'} raised · ${fundPct}%</span>
+    </div>` : '';
+
   return `
     <div class="set-card${ownedClass}" data-id="${set.id}">
       <div class="drag-handle" title="Drag to reorder">&#8942;&#8942;</div>
@@ -355,12 +468,14 @@ function renderSetCard(set) {
         <div class="set-footer">
           ${priceBadge}
           ${ownedToggle}
+          ${fundBtn}
           <select class="tag-select" data-set-id="${set.id}">
             <option value="">— No tag —</option>
             ${tagOptions}
           </select>
           <button class="btn-remove" data-set-id="${set.id}" title="Remove">&times;</button>
         </div>
+        ${miniProgress}
       </div>
     </div>`;
 }
@@ -430,6 +545,21 @@ function renderTagPicker() {
 function renderWishlist() {
   const container = document.getElementById('wishlist-container');
 
+  if (activeTab === 'funding') {
+    const fundingSets = state.sets.filter(s => s.funding?.active);
+    container.innerHTML = fundingSets.length
+      ? `<div class="funding-grid">${fundingSets.map(renderFundingCard).join('')}</div>`
+      : `<div class="funding-empty"><div class="empty-icon">🧱</div><p>No active funding goals yet.<br>Hit <strong>+ Fund</strong> on any wishlist set to start one.</p></div>`;
+    document.getElementById('empty-state').classList.add('hidden');
+    container.querySelectorAll('.btn-cancel-funding').forEach(btn => {
+      btn.addEventListener('click', () => openCancelFundingModal(btn.dataset.setId));
+    });
+    container.querySelectorAll('.btn-edit-raised').forEach(btn => {
+      btn.addEventListener('click', () => openUpdateRaisedModal(btn.dataset.setId));
+    });
+    return;
+  }
+
   let html = renderGroup(null, 'Untagged', '#555');
   state.tags.forEach(t => { html += renderGroup(t.id, t.name, t.color); });
   container.innerHTML = html;
@@ -473,6 +603,17 @@ function renderWishlist() {
     });
   });
 
+  container.querySelectorAll('.btn-fund').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const set = state.sets.find(s => s.id === btn.dataset.setId);
+      if (set?.funding?.active) {
+        openCancelFundingModal(btn.dataset.setId);
+      } else {
+        startFunding(btn.dataset.setId);
+      }
+    });
+  });
+
   const visibleSets = activeTab === 'wishlist'
     ? state.sets.filter(s => !s.owned)
     : state.sets.filter(s =>  s.owned);
@@ -509,9 +650,15 @@ function renderSummary() {
 }
 
 function render() {
+  const isFunding = activeTab === 'funding';
+  document.querySelector('.tags-bar').classList.toggle('hidden', isFunding);
+  document.getElementById('btn-add').classList.toggle('hidden', isFunding);
+  document.getElementById('wl-summary').classList.toggle('hidden', isFunding);
   renderSummary();
-  renderTagsBar();
-  renderTagPicker();
+  if (!isFunding) {
+    renderTagsBar();
+    renderTagPicker();
+  }
   renderWishlist();
 }
 
@@ -611,11 +758,45 @@ function initEvents() {
     if (e.target.id === 'tag-modal') document.getElementById('tag-modal').classList.add('hidden');
   });
 
+  // Cancel funding modal
+  document.getElementById('btn-keep-funding').addEventListener('click', () => {
+    document.getElementById('cancel-funding-modal').classList.add('hidden');
+    pendingCancelSetId = null;
+  });
+  document.getElementById('btn-confirm-cancel-funding').addEventListener('click', confirmCancelFunding);
+  document.getElementById('cancel-funding-modal').addEventListener('click', e => {
+    if (e.target.id === 'cancel-funding-modal') {
+      document.getElementById('cancel-funding-modal').classList.add('hidden');
+      pendingCancelSetId = null;
+    }
+  });
+
+  // Update raised modal
+  document.getElementById('btn-cancel-raised').addEventListener('click', () => {
+    document.getElementById('update-raised-modal').classList.add('hidden');
+    pendingUpdateSetId = null;
+  });
+  document.getElementById('btn-confirm-raised').addEventListener('click', confirmUpdateRaised);
+  document.getElementById('raised-amount-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmUpdateRaised();
+    if (e.key === 'Escape') {
+      document.getElementById('update-raised-modal').classList.add('hidden');
+      pendingUpdateSetId = null;
+    }
+  });
+  document.getElementById('update-raised-modal').addEventListener('click', e => {
+    if (e.target.id === 'update-raised-modal') {
+      document.getElementById('update-raised-modal').classList.add('hidden');
+      pendingUpdateSetId = null;
+    }
+  });
+
   document.querySelector('.wl-tabs').addEventListener('click', e => {
     const tab = e.target.closest('.wl-tab');
     if (!tab || tab.dataset.tab === activeTab) return;
     activeTab = tab.dataset.tab;
     document.querySelectorAll('.wl-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    if (activeTab === 'funding') document.getElementById('add-panel').classList.add('hidden');
     render();
   });
 }

@@ -14,4 +14,10 @@ const WISHLIST_CONFIG = {
   // After the first visit, open the browser console, copy the ID logged as
   // "[wishlist] Created new JSONBin: <ID>" and paste it here, then redeploy.
   jsonbinBinId: '69d03e6636566621a878bb05',
+
+  // Donation link for the Funding tab.
+  // Ko-fi:    'https://ko-fi.com/YOUR_USERNAME'
+  // PayPal.me:'https://www.paypal.me/YOUR_USERNAME'  (remaining amount auto-filled)
+  // Leave empty to hide the donate button until configured.
+  donationLink: '',
 };

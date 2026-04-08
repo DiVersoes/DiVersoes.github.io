@@ -55,6 +55,7 @@
     <div class="wl-tabs">
       <button class="wl-tab active" data-tab="wishlist">Wishlist</button>
       <button class="wl-tab" data-tab="owned">Owned</button>
+      <button class="wl-tab" data-tab="funding">Funding</button>
     </div>
 
     <!-- Tags bar -->
@@ -73,6 +74,32 @@
     </div>
 
   </main>
+
+  <!-- Cancel funding modal -->
+  <div id="cancel-funding-modal" class="modal-overlay hidden">
+    <div class="modal warning-modal">
+      <div class="modal-icon">⚠️</div>
+      <h3>Cancel funding?</h3>
+      <p>You're about to stop the fundraiser for <strong id="cancel-funding-name"></strong>.<br>
+      All progress will be reset and the goal removed. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="btn-keep-funding" class="btn-ghost">Keep funding</button>
+        <button id="btn-confirm-cancel-funding" class="btn-danger">Yes, cancel it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update raised amount modal -->
+  <div id="update-raised-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Update raised amount</h3>
+      <input type="number" id="raised-amount-input" placeholder="0.00" step="0.01" min="0" />
+      <div class="modal-actions">
+        <button id="btn-cancel-raised" class="btn-ghost">Cancel</button>
+        <button id="btn-confirm-raised" class="btn-primary">Update</button>
+      </div>
+    </div>
+  </div>
 
   <!-- New tag modal -->
   <div id="tag-modal" class="modal-overlay hidden">
